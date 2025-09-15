@@ -20,6 +20,13 @@ export class ChatList implements OnInit {
     this.currentUserId = this.chatService.getCurrentUser().id;
     this.users = this.chatService.getAllUsers();
     this.selectedUserId = this.chatService.getSelectedUser();
+
+    //this
+    this.chatService.onUsersUpdate(() => {
+    this.users = [...this.chatService.getAllUsers()];
+  });
+  //this
+
   }
 
   selectUser(userId: string) {
@@ -30,4 +37,5 @@ export class ChatList implements OnInit {
   isSelected(userId: string): boolean {
     return this.selectedUserId === userId;
   }
+
 }

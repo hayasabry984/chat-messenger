@@ -2,22 +2,8 @@
 import { Injectable } from '@angular/core';
 
 export interface User { id: string; name: string; avatar: string; }
-
-export interface LinkPreview {
-  title: string;
-  description: string;
-  image: string;
-  domain: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  from: User;
-  to: string;
-  text: string;
-  timestamp: number;
-  linkPreview?: LinkPreview;
-}
+export interface LinkPreview { title: string; description: string; image: string; domain: string; }
+export interface ChatMessage { id: string; from: User; to: string; text: string; timestamp: number; linkPreview?: LinkPreview; }
 
 @Injectable({ providedIn: 'root' })
 export class ChatService {
@@ -35,6 +21,7 @@ export class ChatService {
   private users: User[] = [];
   private selectedUserId: string | null = null;
   private messageCallback?: (msg: ChatMessage) => void;
+  private usersUpdateCallback?: () => void;
   private selectedUserChangeCallback?: () => void;
 
   constructor() {
@@ -50,20 +37,36 @@ export class ChatService {
 
     this.channel = new BroadcastChannel('chat_app');
     this.users.push(this.currentUser);
+
+    // Notify all tabs about this new user
     this.channel.postMessage({ type: 'join', user: this.currentUser });
 
     this.channel.onmessage = (event) => {
       const data = event.data;
 
       if (data.type === 'join') {
-        if (!this.users.find(u => u.id === data.user.id)) this.users.push(data.user);
+        // Add user if not already present
+        if (!this.users.find(u => u.id === data.user.id)) {
+          this.users.push(data.user);
+          if (this.usersUpdateCallback) this.usersUpdateCallback();
+        }
+
+        // Send current users to the new tab only (once)
         if (data.user.id !== this.currentUser.id) {
-          this.channel.postMessage({ type: 'join', user: this.currentUser });
+          this.channel.postMessage({ type: 'user-list', users: this.users });
         }
       }
 
+      if (data.type === 'user-list') {
+        // Merge users without duplicates
+        data.users.forEach((u: User) => {
+          if (!this.users.find(x => x.id === u.id)) this.users.push(u);
+        });
+        if (this.usersUpdateCallback) this.usersUpdateCallback();
+      }
+
       if (data.type === 'message') {
-        const msg = data.message as ChatMessage;
+        const msg: ChatMessage = data.message;
         if (!this.messages.find(m => m.id === msg.id)) {
           this.messages.push(msg);
           if (this.messageCallback) this.messageCallback(msg);
@@ -72,17 +75,21 @@ export class ChatService {
     };
   }
 
+  // --- USERS ---
   getCurrentUser(): User { return this.currentUser; }
   getAllUsers(): User[] { return this.users; }
+  onUsersUpdate(callback: () => void) { this.usersUpdateCallback = callback; }
+
   setSelectedUser(userId: string) {
     this.selectedUserId = userId;
     if (this.selectedUserChangeCallback) this.selectedUserChangeCallback();
   }
   getSelectedUser(): string | null { return this.selectedUserId; }
   onSelectedUserChange(callback: () => void) { this.selectedUserChangeCallback = callback; }
+
+  // --- MESSAGES ---
   getMessages(): ChatMessage[] { return this.messages; }
 
-  // --- Send message (only once, with preview if available) ---
   async sendMessage(to: string, text: string) {
     const msg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -96,12 +103,9 @@ export class ChatService {
     const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
     if (urlMatch) {
       const preview = await this.fetchLinkPreview(urlMatch[0]);
-      if (preview) {
-        msg.linkPreview = preview;
-      }
+      if (preview) msg.linkPreview = preview;
     }
 
-    // Push + broadcast only once
     this.messages.push(msg);
     this.channel.postMessage({ type: 'message', message: msg });
     if (this.messageCallback) this.messageCallback(msg);
@@ -116,7 +120,6 @@ export class ChatService {
       const response = await fetch(`http://localhost/preview-proxy.php?url=${encodeURIComponent(url)}`);
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
       const data = await response.json();
-
       return {
         title: data.title || '',
         description: data.description || '',
