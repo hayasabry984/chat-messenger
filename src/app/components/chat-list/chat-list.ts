@@ -26,7 +26,6 @@ export class ChatList implements OnInit {
     this.users = [...this.chatService.getAllUsers()];
   });
   //this
-
   }
 
   selectUser(userId: string) {

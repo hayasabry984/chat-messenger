@@ -1,4 +1,3 @@
-// src/app/services/chat.ts
 import { Injectable } from '@angular/core';
 
 export interface User { id: string; name: string; avatar: string; }
@@ -20,11 +19,13 @@ export class ChatService {
   private messages: ChatMessage[] = [];
   private users: User[] = [];
   private selectedUserId: string | null = null;
+
   private messageCallback?: (msg: ChatMessage) => void;
   private usersUpdateCallback?: () => void;
   private selectedUserChangeCallback?: () => void;
 
   constructor() {
+    // Load current user or create new
     const savedUser = sessionStorage.getItem('chat-user');
     if (savedUser) this.currentUser = JSON.parse(savedUser);
     else {
@@ -35,55 +36,71 @@ export class ChatService {
       sessionStorage.setItem('chat-user', JSON.stringify(this.currentUser));
     }
 
+    // Load messages from localStorage
+    const savedMessages = localStorage.getItem('chat-messages');
+    if (savedMessages) this.messages = JSON.parse(savedMessages);
+
     this.channel = new BroadcastChannel('chat_app');
+
+    // Add current user locally
     this.users.push(this.currentUser);
 
-    // Notify all tabs about this new user
+    // Notify other tabs about this user
     this.channel.postMessage({ type: 'join', user: this.currentUser });
 
+    // Listen to broadcast messages
     this.channel.onmessage = (event) => {
       const data = event.data;
 
-      if (data.type === 'join') {
-        // Add user if not already present
-        if (!this.users.find(u => u.id === data.user.id)) {
-          this.users.push(data.user);
-          if (this.usersUpdateCallback) this.usersUpdateCallback();
-        }
+      switch (data.type) {
+        case 'join':
+          if (!this.users.find(u => u.id === data.user.id)) {
+            this.users.push(data.user);
+            this.broadcastUserList(); // send updated list to all
+            this.usersUpdateCallback?.();
+          }
+          break;
 
-        // Send current users to the new tab only (once)
-        if (data.user.id !== this.currentUser.id) {
-          this.channel.postMessage({ type: 'user-list', users: this.users });
-        }
-      }
+        case 'user-list':
+          data.users.forEach((u: User) => {
+            if (!this.users.find(x => x.id === u.id)) this.users.push(u);
+          });
+          this.usersUpdateCallback?.();
+          break;
 
-      if (data.type === 'user-list') {
-        // Merge users without duplicates
-        data.users.forEach((u: User) => {
-          if (!this.users.find(x => x.id === u.id)) this.users.push(u);
-        });
-        if (this.usersUpdateCallback) this.usersUpdateCallback();
-      }
+        case 'leave':
+          this.users = this.users.filter(u => u.id !== data.userId);
+          this.usersUpdateCallback?.();
+          break;
 
-      if (data.type === 'message') {
-        const msg: ChatMessage = data.message;
-        if (!this.messages.find(m => m.id === msg.id)) {
-          this.messages.push(msg);
-          if (this.messageCallback) this.messageCallback(msg);
-        }
+        case 'message':
+          const msg: ChatMessage = data.message;
+          if (!this.messages.find(m => m.id === msg.id)) {
+            this.messages.push(msg);
+            localStorage.setItem('chat-messages', JSON.stringify(this.messages));
+            this.messageCallback?.(msg);
+          }
+          break;
       }
     };
+
+    // Handle tab close
+    window.addEventListener('beforeunload', () => {
+      this.channel.postMessage({ type: 'leave', userId: this.currentUser.id });
+    });
   }
 
   // --- USERS ---
   getCurrentUser(): User { return this.currentUser; }
   getAllUsers(): User[] { return this.users; }
+
   onUsersUpdate(callback: () => void) { this.usersUpdateCallback = callback; }
 
   setSelectedUser(userId: string) {
     this.selectedUserId = userId;
-    if (this.selectedUserChangeCallback) this.selectedUserChangeCallback();
+    this.selectedUserChangeCallback?.();
   }
+
   getSelectedUser(): string | null { return this.selectedUserId; }
   onSelectedUserChange(callback: () => void) { this.selectedUserChangeCallback = callback; }
 
@@ -99,7 +116,7 @@ export class ChatService {
       timestamp: Date.now()
     };
 
-    // Check for link preview BEFORE sending
+    // Check for link preview
     const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
     if (urlMatch) {
       const preview = await this.fetchLinkPreview(urlMatch[0]);
@@ -107,8 +124,9 @@ export class ChatService {
     }
 
     this.messages.push(msg);
+    localStorage.setItem('chat-messages', JSON.stringify(this.messages));
     this.channel.postMessage({ type: 'message', message: msg });
-    if (this.messageCallback) this.messageCallback(msg);
+    this.messageCallback?.(msg);
   }
 
   listenForMessages(callback: (msg: ChatMessage) => void) {
@@ -130,5 +148,9 @@ export class ChatService {
       console.warn('Link preview fetch failed:', err);
       return undefined;
     }
+  }
+
+  private broadcastUserList() {
+    this.channel.postMessage({ type: 'user-list', users: this.users });
   }
 }
