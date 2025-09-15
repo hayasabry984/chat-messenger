@@ -1,0 +1,33 @@
+/* chat-body.css */
+.message {
+  max-width: 70%;
+  word-wrap: break-word;
+  color: black; /* text black for everyone */
+}
+
+/* My messages */
+.my-message {
+  background-color: #B39DDB; /* Purple */
+  color: black !important;
+  max-width: 70%;
+}
+
+/* Others' messages */
+.other-message {
+  background-color: #F5F5F5;
+  color: black !important;
+  max-width: 70%;
+}
+
+/* Message text */
+.message-text {
+  color: black;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Timestamp */
+.timestamp {
+  font-size: 0.75rem;
+  margin-top: 2px;
+}

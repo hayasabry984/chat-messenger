@@ -1,0 +1,9 @@
+<div class="input-group">
+  <input #messageInput
+         [(ngModel)]="messageText"
+         type="text"
+         class="form-control"
+         placeholder="Type a message..."
+         (keydown)="onKeydown($event)" />
+  <button class="btn btn-primary" (click)="sendMessage()">Send</button>
+</div>

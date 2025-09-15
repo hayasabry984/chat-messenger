@@ -1,0 +1,22 @@
+<div class="container-fluid h-100">
+  <div class="row h-100">
+
+    <!-- Chat List (Left Column) -->
+    <div class="col-4 col-md-3 border-end p-0 chat-list-column overflow-auto">
+      <app-chat-list></app-chat-list>
+    </div>
+
+    <!-- Chat Body (Right Column) -->
+    <div class="col-8 col-md-9 p-0 d-flex flex-column">
+      <div class="chat-body flex-grow-1 overflow-auto pe-3">
+        <app-chat-body></app-chat-body>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<!-- Chat Box (Always fixed at bottom) -->
+<div class="chat-box-container">
+  <app-chat-box></app-chat-box>
+</div>

@@ -1,0 +1,16 @@
+.user-item {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.user-item:hover {
+  background: #ddcdfa;
+}
+.bg-light {
+  background: #ddcdfa !important; /* highlight selected */
+}
+
+/* Badge for "You" */
+.you-badge {
+  background-color: #B39DDB !important;
+  color: #fff;
+}

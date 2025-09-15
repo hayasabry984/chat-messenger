@@ -1,0 +1,21 @@
+<!-- User list -->
+<div *ngFor="let user of users" 
+     class="p-3 d-flex align-items-center user-item"
+     [ngClass]="{ 'bg-light': isSelected(user.id) }"
+     (click)="selectUser(user.id)">
+  
+  <img [src]="user.avatar"
+       alt="{{ user.name }}"
+       width="48" height="48"
+       class="rounded-circle"
+       (error)="user.avatar='https://via.placeholder.com/48?text=?'"/>
+  
+  <div class="ms-3">
+    <div class="fw-semibold">
+      {{ user.name }}
+      <!--<span *ngIf="user.id === currentUserId" class="badge bg-primary ms-1">You</span>-->
+      <span *ngIf="user.id === currentUserId" class="badge you-badge ms-1">You</span>
+    </div>
+    <div class="text-muted small">ID: {{ user.id }}</div>
+  </div>
+</div>

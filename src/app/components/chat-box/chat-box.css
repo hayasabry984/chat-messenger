@@ -1,0 +1,17 @@
+/* chat-box.css */
+.btn-primary {
+  background-color: #B39DDB !important;
+  border-color: #B39DDB !important;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #9C7BCF !important; /* slightly darker on hover */
+  border-color: #9C7BCF !important;
+}
+
+/* Chat input border highlight */
+.form-control:focus {
+  border-color: #B39DDB !important;
+  box-shadow: 0 0 0 0.25rem rgba(179, 157, 219, 0.25) !important; /* soft purple glow */
+}

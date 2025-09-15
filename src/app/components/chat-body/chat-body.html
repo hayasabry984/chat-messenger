@@ -1,0 +1,26 @@
+<div class="chat-body p-3">
+  <div *ngFor="let msg of messages" 
+       class="mb-3 d-flex"
+       [ngClass]="{ 'justify-content-end': isOwnMessage(msg), 'justify-content-start': !isOwnMessage(msg) }">
+
+    <div class="message p-2 rounded shadow-sm"
+         [ngClass]="{ 'my-message': isOwnMessage(msg), 'other-message': !isOwnMessage(msg) }">
+
+      <!-- Message text -->
+      <div class="message-text" [innerHTML]="formatMessage(msg)"></div>
+
+      <!-- Timestamp -->
+      <div class="timestamp small text-muted">
+        {{ msg.timestamp | date:'shortTime' }}
+      </div>
+
+      <!-- Link Preview -->
+      <div *ngIf="msg.linkPreview" class="link-preview mt-2 p-2 border rounded bg-white text-dark">
+        <img *ngIf="msg.linkPreview.image" [src]="msg.linkPreview.image" class="img-fluid mb-1"/>
+        <div class="fw-bold">{{ msg.linkPreview.title }}</div>
+        <div class="text-muted small">{{ msg.linkPreview.description }}</div>
+        <a [href]="'https://' + msg.linkPreview.domain" target="_blank">{{ msg.linkPreview.domain }}</a>
+      </div>
+    </div>
+  </div>
+</div>
